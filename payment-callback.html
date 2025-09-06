@@ -60,6 +60,73 @@
   </div>
   
   <script>
+    // Function to hash data using SHA-256
+    async function sha256(message) {
+      // Encode as UTF-8
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+      
+      // Hash the data
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      
+      // Convert buffer to hex string
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      return hashHex;
+    }
+    
+    // Function to prepare user data for TikTok
+    async function prepareUserData(userData) {
+      const hashedData = {};
+      
+      if (userData.phone) {
+        // Normalize phone number (remove all non-digit characters)
+        const normalizedPhone = userData.phone.replace(/\D/g, '');
+        if (normalizedPhone.length >= 9) {
+          hashedData.ph = await sha256(normalizedPhone);
+        }
+      }
+      
+      if (userData.external_id) {
+        hashedData.external_id = await sha256(userData.external_id.toString());
+      }
+      
+      return hashedData;
+    }
+    
+    // Function to track TikTok event with user data
+    async function trackTikTokEvent(eventName, orderData) {
+      // Prepare user data
+      const userData = {
+        phone: orderData.customerPhone,
+        external_id: orderData.orderId
+      };
+      
+      const tiktokUserData = await prepareUserData(userData);
+      
+      // Send user data to TikTok
+      ttq.identify(tiktokUserData);
+      
+      // Track event with user data
+      const eventData = {
+        content_name: orderData.product,
+        content_category: 'Watches',
+        content_ids: [orderData.product === 'GA-110 Hitam' ? 'GA110' : 'GA100'],
+        content_type: 'product',
+        value: orderData.total,
+        currency: 'MYR',
+        quantity: orderData.quantity,
+        ...tiktokUserData
+      };
+      
+      if (orderData.orderId) {
+        eventData.order_id = orderData.orderId;
+      }
+      
+      ttq.track(eventName, eventData);
+    }
+    
     // Function to get URL parameters
     function getUrlParameter(name) {
       name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
@@ -69,7 +136,7 @@
     }
     
     // Process payment callback
-    window.addEventListener('load', function() {
+    window.addEventListener('load', async function() {
       const paymentStatusElement = document.getElementById('paymentStatus');
       
       // Get payment status from URL parameters
@@ -89,16 +156,7 @@
         `;
         
         // Track successful payment event for TikTok Pixel
-        ttq.track('CompletePayment', {
-          content_name: orderData.product,
-          content_category: 'Watches',
-          content_ids: [orderData.product === 'GA-110 Hitam' ? 'GA110' : 'GA100'],
-          content_type: 'product',
-          value: orderData.total,
-          currency: 'MYR',
-          quantity: orderData.quantity,
-          order_id: billcode || orderid
-        });
+        await trackTikTokEvent('CompletePayment', orderData);
         
         // Redirect to success page after 3 seconds
         setTimeout(() => {
@@ -114,16 +172,7 @@
         `;
         
         // Track failed payment event for TikTok Pixel
-        ttq.track('AddPaymentInfo', {
-          content_name: orderData.product,
-          content_category: 'Watches',
-          content_ids: [orderData.product === 'GA-110 Hitam' ? 'GA110' : 'GA100'],
-          content_type: 'product',
-          value: orderData.total,
-          currency: 'MYR',
-          quantity: orderData.quantity,
-          status: 'Failed'
-        });
+        await trackTikTokEvent('AddPaymentInfo', orderData);
         
         // Redirect to failed page after 3 seconds
         setTimeout(() => {
