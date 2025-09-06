@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pembayaran Berjaya - HasraStore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  
+  <!-- TikTok Pixel Code Start -->
+  <script>
+  !function (w, d, t) {
+    w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(
+    var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+    ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+
+    ttq.load('D2QHLA3C77U0F0FSL98G');
+    ttq.page();
+  }(window, document, 'ttq');
+  </script>
+  <!-- TikTok Pixel Code End -->
+  
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .animate-pulse-slow {
+      animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: .5;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+      <div class="text-green-500 text-6xl mb-4 animate-pulse-slow">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800 mb-2">Pembayaran Berjaya!</h1>
+      <p class="text-gray-600 mb-6">Terima kasih atas pembelian anda. Kami akan memproses pesanan anda segera.</p>
+      
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left">
+        <h3 class="font-bold text-green-800 mb-2 flex items-center">
+          <i class="fas fa-info-circle mr-2"></i> Maklumat Pesanan
+        </h3>
+        <div id="orderDetails" class="text-sm text-green-700">
+          <p class="mb-1">Sila tunggu sebentar...</p>
+        </div>
+      </div>
+      
+      <a href="https://g-shockhasrastore.vercel.app" class="inline-block bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700 transition">
+        Kembali ke Laman Utama
+      </a>
+    </div>
+  </div>
+  <script>
+    // Check if there's a pending order in sessionStorage
+    window.addEventListener('load', function() {
+      // Get order data from sessionStorage
+      const orderData = JSON.parse(sessionStorage.getItem('pendingOrder'));
+      
+      if (orderData) {
+        // Track purchase event ONLY for online payments - TikTok Pixel
+        if (orderData.paymentMethod === 'Online') {
+          ttq.track('CompletePayment', {
+            content_name: orderData.product,
+            content_category: 'Watches',
+            content_ids: [orderData.product === 'GA-110 Hitam' ? 'GA110' : 'GA100'],
+            content_type: 'product',
+            value: orderData.total,
+            currency: 'MYR',
+            quantity: orderData.quantity,
+            order_id: orderData.orderId
+          });
+        }
+        
+        // Display order details to the customer
+        const orderDetailsElement = document.getElementById('orderDetails');
+        orderDetailsElement.innerHTML = `
+          <p class="mb-1"><span class="font-semibold">Produk:</span> ${orderData.product}</p>
+          <p class="mb-1"><span class="font-semibold">Kuantiti:</span> ${orderData.quantity}</p>
+          <p class="mb-1"><span class="font-semibold">Jumlah:</span> RM${orderData.total}</p>
+          <p class="mb-1"><span class="font-semibold">Nama:</span> ${orderData.customerName}</p>
+          <p class="mb-1"><span class="font-semibold">No Telefon:</span> ${orderData.customerPhone}</p>
+        `;
+        
+        // Update payment status
+        orderData.paymentStatus = 'Paid';
+        
+        // Format the date and time
+        const orderDateTime = new Date().toLocaleString('ms-MY', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        // Send Telegram notification with complete delivery details
+        fetch('https://api.telegram.org/bot8294840075:AAHcFX_v7AE6Ys_UOfBdCnctuUJtYRrTGWc/sendMessage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chat_id: '642142575',
+            text: `✅ <b>PESANAN BARU - PEMBAYARAN BERJAYA</b> ✅
+📦 <b>PRODUK:</b> ${orderData.product}
+🔢 <b>KUANTITI:</b> ${orderData.quantity}
+💰 <b>JUMLAH:</b> RM${orderData.total}
+👤 <b>MAKLUMAT PELANGGAN:</b>
+📝 <b>Nama:</b> ${orderData.customerName}
+📱 <b>No Telefon:</b> ${orderData.customerPhone}
+🏠 <b>Alamat:</b> ${orderData.customerAddress}
+📮 <b>Poskod:</b> ${orderData.poskod}
+🗺️ <b>Negeri:</b> ${orderData.customerState}
+💳 <b>JENIS PEMBAYARAN:</b> ${orderData.paymentMethod}
+📅 <b>MASA:</b> ${orderDateTime}
+⚠️ <b>SILA PROSESKAN PESANAN INI SECEPAT MUNGKIN</b>`,
+            parse_mode: 'HTML'
+          })
+        }).then(response => response.json())
+          .then(data => {
+            if (data.ok) {
+              console.log('Telegram notification sent successfully');
+            } else {
+              console.error('Failed to send Telegram notification:', data);
+            }
+          })
+          .catch(error => {
+            console.error('Error sending Telegram notification:', error);
+          });
+        
+        // Clear sessionStorage
+        sessionStorage.removeItem('pendingOrder');
+      } else {
+        // If no order data found
+        const orderDetailsElement = document.getElementById('orderDetails');
+        orderDetailsElement.innerHTML = `
+          <p class="mb-1">Maklumat pesanan tidak tersedia.</p>
+          <p class="mb-1">Sila hubungi kami jika anda menghadapi sebarang masalah.</p>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
